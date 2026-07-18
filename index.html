@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkyCast — High‑Fidelity Mobile Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<style>
+/* ======================================================
+   TOKENS
+====================================================== */
+:root{
+  --primary:#4F8EF7;
+  --secondary:#6C63FF;
+  --accent:#00D4FF;
+  --bg:#08111F;
+  --bg-2:#150C2E;
+  --surface:rgba(255,255,255,0.08);
+  --surface-strong:rgba(255,255,255,0.14);
+  --border:rgba(255,255,255,0.14);
+  --text:#FFFFFF;
+  --muted:#B8C4E0;
+  --faint:#7C87AC;
+  --success:#34D399;
+  --warning:#FBBF24;
+  --danger:#F87171;
+  --r-lg:24px;
+  --r-md:20px;
+  --r-sm:14px;
+  --shadow-soft:0 20px 50px rgba(3,8,20,0.55);
+  --font-display:'Poppins',sans-serif;
+  --font-body:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:var(--font-body);
+  color:var(--text);
+  background:
+    radial-gradient(circle at 15% 8%, rgba(108,99,255,0.35), transparent 45%),
+    radial-gradient(circle at 85% 90%, rgba(0,212,255,0.18), transparent 40%),
+    linear-gradient(160deg,#0A1226 0%, #150C2E 55%, #08111F 100%);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px 16px;
+  overflow-x:hidden;
+}
+button{font-family:inherit;cursor:pointer;}
+::-webkit-scrollbar{display:none;}
+*{scrollbar-width:none;}
+
+/* ambient studio backdrop label */
+.studio-frame{display:flex;flex-direction:column;align-items:center;gap:22px;}
+.studio-label{
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:12px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--faint);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.studio-label .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);}
+
+/* ======================================================
+   PHONE DEVICE
+====================================================== */
+.device{
+  position:relative;
+  width:390px;
+  height:844px;
+  border-radius:54px;
+  padding:14px;
+  background:linear-gradient(160deg,#1b2540,#0a0f1f 60%);
+  box-shadow:var(--shadow-soft), inset 0 0 0 2px rgba(255,255,255,0.06);
+}
+.device::before{ /* side buttons flavor */
+  content:"";
+  position:absolute;left:-3px;top:150px;width:3px;height:60px;
+  background:#0a0f1f;border-radius:2px;
+}
+.screen-viewport{
+  position:relative;
+  width:100%;height:100%;
+  background:var(--bg);
+  border-radius:40px;
+  overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+.notch{
+  position:absolute;top:14px;left:50%;transform:translateX(-50%);
+  width:118px;height:30px;background:#000;border-radius:20px;
+  z-index:50;display:flex;align-items:center;justify-content:flex-end;padding-right:14px;
+}
+.notch .cam{width:8px;height:8px;border-radius:50%;background:#161b2c;box-shadow:inset 0 0 2px #3a4a7a;}
+.home-indicator{
+  position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  width:120px;height:5px;border-radius:4px;background:rgba(255,255,255,0.55);z-index:50;
+}
+
+/* ======================================================
+   SCREENS — shared
+====================================================== */
+.screen{
+  position:absolute;inset:0;
+  display:none;
+  flex-direction:column;
+  opacity:0;
+  background:
+    radial-gradient(circle at 20% -10%, rgba(79,142,247,0.28), transparent 55%),
+    radial-gradient(circle at 100% 0%, rgba(108,99,255,0.22), transparent 45%),
+    var(--bg);
+}
+.screen.active{display:flex;animation:screenIn .5s cubic-bezier(.22,.61,.36,1) both;}
+@keyframes screenIn{
+  from{opacity:0;transform:translateY(14px) scale(.99);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+@media (prefers-reduced-motion: reduce){
+  .screen.active{animation:none;opacity:1;}
+}
+
+.scroll-area{flex:1;overflow-y:auto;padding:0 22px 110px;}
+.scroll-area.no-nav{padding-bottom:34px;}
+
+.status-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:20px 22px 4px;font-size:13px;font-weight:600;color:var(--text);z-index:40;
+}
+
+/* top header w/ back */
+.top-header{
+  display:flex;align-items:center;gap:14px;padding:8px 22px 18px;
+}
+.icon-btn{
+  width:40px;height:40px;border-radius:14px;
+  background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text);font-size:18px;transition:.2s;
+}
+.icon-btn:active{transform:scale(.92);background:var(--surface-strong);}
+.top-header h2{font-family:var(--font-display);font-weight:600;font-size:18px;}
+.top-header .spacer{flex:1;}
+
+.eyebrow{
+  font-family:var(--font-display);font-size:11px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+}
+
+/* ======================================================
+   GLASS CARD / COMPONENTS
+====================================================== */
+.glass-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  backdrop-filter:blur(18px);
+  box-shadow:0 12px 30px rgba(3,8,20,0.35);
+}
+.section-title{
+  font-family:var(--font-display);font-weight:600;font-size:16px;
+  display:flex;align-items:center;justify-content:space-between;margin:22px 0 12px;
+}
+.section-title .link{font-size:12px;font-weight:600;color:var(--accent);}
+
+/* Buttons */
+.btn{
+  border:none;border-radius:999px;padding:16px 20px;font-family:var(--font-display);
+  font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:transform .15s ease, box-shadow .15s ease;width:100%;
+}
+.btn:active{transform:scale(.97);}
+.btn-primary{color:#04101f;background:linear-gradient(120deg,var(--accent),var(--primary));box-shadow:0 14px 30px rgba(79,142,247,0.35);}
+.btn-ghost{color:var(--text);background:var(--surface);border:1px solid var(--border);}
+
+/* Bottom nav */
+.bottom-nav{
+  position:absolute;left:16px;right:16px;bottom:26px;height:66px;
+  background:rgba(12,18,36,0.75);border:1px solid var(--border);
+  border-radius:26px;backdrop-filter:blur(20px);
+  display:flex;align-items:center;justify-content:space-around;
+  box-shadow:0 16px 34px rgba(3,8,20,0.5);z-index:45;
+}
+.nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  color:var(--faint);font-size:10px;font-weight:600;width:64px;
+  border:none;background:none;
+}
+.nav-item i{font-size:20px;}
+.nav-item.active{color:var(--accent);}
+.nav-item .nub{width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0;transition:.2s;}
+.nav-item.active .nub{opacity:1;}
+
+/* Weather glyph wrapper */
+.glyph{filter:drop-shadow(0 8px 18px rgba(0,212,255,0.25));}
+.glyph .sun-core{animation:pulse 4s ease-in-out infinite;}
+.glyph .cloud{animation:drift 6s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+@keyframes drift{0%,100%{transform:translateX(0);}50%{transform:translateX(4px);}}
+
+/* ======================================================
+   1. SPLASH
+====================================================== */
+#screen-splash{align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden;}
+.orb{
+  position:absolute;width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle, rgba(108,99,255,0.55), rgba(0,212,255,0.05) 70%);
+  filter:blur(10px);top:-90px;left:50%;transform:translateX(-50%);
+  animation:orbFloat 8s ease-in-out infinite;
+}
+@keyframes orbFloat{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(18px);}}
+.splash-mark{position:relative;z-index:2;}
+.splash-wordmark{
+  font-family:var(--font-display);font-weight:800;font-size:34px;letter-spacing:.02em;margin-top:22px;
+}
+.splash-tagline{color:var(--muted);font-size:14px;margin-top:8px;max-width:240px;}
+.splash-cta{position:absolute;bottom:70px;left:22px;right:22px;z-index:2;}
+.splash-clouds span{position:absolute;opacity:.5;animation:cloudMove linear infinite;}
+@keyframes cloudMove{from{transform:translateX(-40px);}to{transform:translateX(40px);}}
+
+/* ======================================================
+   2. HOME
+====================================================== */
+.home-top{padding:6px 22px 0;display:flex;justify-content:space-between;align-items:flex-start;}
+.location{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;font-weight:600;}
+.location i{color:var(--accent);}
+.home-datetime{font-size:12px;color:var(--faint);margin-top:4px;}
+.avatar-btn{width:40px;height:40px;border-radius:14px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;}
+
+.hero-weather{padding:8px 22px 4px;text-align:center;position:relative;}
+.hero-temp{font-family:var(--font-display);font-weight:700;font-size:88px;line-height:1;letter-spacing:-.03em;}
+.hero-condition{font-family:var(--font-display);font-weight:600;font-size:17px;margin-top:4px;}
+.hero-feels{color:var(--muted);font-size:13px;margin-top:4px;}
+
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:18px 22px 0;}
+.quick-tile{padding:14px 10px;text-align:center;}
+.quick-tile i{font-size:20px;color:var(--accent);}
+.quick-tile .val{font-family:var(--font-display);font-weight:600;font-size:14px;margin-top:6px;}
+.quick-tile .lbl{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+
+.aqi-banner{
+  margin:18px 22px 0;padding:14px 16px;display:flex;align-items:center;gap:12px;
+}
+.aqi-ring{width:44px;height:44px;border-radius:50%;background:conic-gradient(var(--success) 0 72%, rgba(255,255,255,0.08) 72% 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.aqi-ring span{width:34px;height:34px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--font-display);}
+.aqi-copy{flex:1;}
+.aqi-copy .t{font-weight:600;font-size:13px;font-family:var(--font-display);}
+.aqi-copy .s{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.hourly-strip{display:flex;gap:12px;overflow-x:auto;padding:2px 22px 4px;}
+.hour-chip{min-width:60px;padding:14px 0;text-align:center;flex-shrink:0;}
+.hour-chip .h-time{font-size:11px;color:var(--faint);}
+.hour-chip i{font-size:22px;color:var(--accent);margin:8px 0;display:block;}
+.hour-chip .h-temp{font-family:var(--font-display);font-weight:600;font-size:13px;}
+
+.sun-track{margin:20px 22px 0;padding:16px;}
+.sun-track .labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px;}
+.sun-track .track{position:relative;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--warning),var(--secondary));}
+.sun-track .sun-dot{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;background:var(--text);box-shadow:0 0 10px var(--accent);transform:translate(-50%,-50%);}
+
+/* ======================================================
+   SEARCH
+====================================================== */
+.search-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;margin:4px 22px 0;}
+.search-bar input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:14px;font-family:var(--font-body);}
+.search-bar input::placeholder{color:var(--faint);}
+.search-bar i{color:var(--muted);font-size:18px;}
+.mic-btn{color:var(--accent);}
+
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.chip{padding:8px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+
+.city-row{display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.city-row .ci{width:38px;height:38px;border-radius:12px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:18px;}
+.city-row .cn{flex:1;}
+.city-row .cn .name{font-weight:600;font-size:14px;font-family:var(--font-display);}
+.city-row .cn .country{font-size:11px;color:var(--faint);}
+.city-row .ct{font-family:var(--font-display);font-weight:600;font-size:14px;}
+
+/* ======================================================
+   DETAILS
+====================================================== */
+.detail-hero{text-align:center;padding:6px 22px 10px;}
+.detail-illustration{margin:0 auto;}
+.detail-temp{font-family:var(--font-display);font-weight:700;font-size:56px;margin-top:6px;}
+.detail-desc{color:var(--muted);font-size:13px;margin-top:2px;}
+
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:18px 22px 0;}
+.stat-card{padding:16px;}
+.stat-card i{font-size:20px;color:var(--accent);}
+.stat-card .v{font-family:var(--font-display);font-weight:600;font-size:16px;margin-top:8px;}
+.stat-card .l{font-size:11px;color:var(--faint);margin-top:2px;}
+
+.rain-bar-wrap{margin:16px 22px 0;padding:16px;}
+.rain-bar{height:8px;border-radius:6px;background:rgba(255,255,255,0.08);margin-top:10px;overflow:hidden;}
+.rain-bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--primary),var(--accent));}
+
+.share-fab{position:absolute;top:64px;right:22px;z-index:40;}
+
+/* ======================================================
+   FORECAST (hourly graph + 7 day, segmented)
+====================================================== */
+.segmented{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px;margin:4px 22px 6px;}
+.segmented button{flex:1;border:none;background:none;color:var(--muted);font-family:var(--font-display);font-weight:600;font-size:12px;padding:9px 0;border-radius:999px;transition:.2s;}
+.segmented button.active{background:linear-gradient(120deg,var(--accent),var(--primary));color:#04101f;}
+
+.graph-card{margin:14px 22px 0;padding:18px;}
+.graph-card .g-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.graph-card .g-head .now{font-family:var(--font-display);font-weight:600;font-size:14px;}
+.graph-card .g-head .range{font-size:11px;color:var(--faint);}
+
+.hourly-list{display:flex;flex-direction:column;gap:0;padding:6px 22px 0;}
+.hourly-row{display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.hourly-row .time{width:56px;font-size:12px;color:var(--muted);font-weight:600;}
+.hourly-row i{font-size:19px;color:var(--accent);width:26px;}
+.hourly-row .rp{flex:1;font-size:11px;color:var(--faint);}
+.hourly-row .ht{font-family:var(--font-display);font-weight:600;font-size:14px;}
+
+.day-card{display:flex;align-items:center;gap:14px;padding:16px;margin-bottom:10px;}
+.day-card .dn{width:78px;}
+.day-card .dn .name{font-family:var(--font-display);font-weight:600;font-size:14px;}
+.day-card .dn .date{font-size:11px;color:var(--faint);}
+.day-card i{font-size:24px;color:var(--accent);}
+.day-card .dd{flex:1;font-size:12px;color:var(--muted);}
+.day-card .range{display:flex;align-items:center;gap:6px;font-family:var(--font-display);font-weight:600;font-size:13px;}
+.day-card .range .lo{color:var(--faint);font-weight:500;}
+
+/* ======================================================
+   AIR QUALITY
+====================================================== */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:12px 22px 6px;}
+.gauge-value{margin-top:-96px;text-align:center;}
+.gauge-value .num{font-family:var(--font-display);font-weight:700;font-size:44px;}
+.gauge-value .lab{font-size:12px;color:var(--success);font-weight:600;margin-top:2px;}
+
+.pollutant-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:8px 22px 0;}
+.pollutant-card{padding:14px 16px;}
+.pollutant-card .pn{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;}
+.pollutant-card .pv{font-family:var(--font-display);font-weight:600;font-size:18px;margin-top:6px;}
+.pollutant-card .pbar{height:5px;border-radius:4px;background:rgba(255,255,255,0.08);margin-top:8px;overflow:hidden;}
+.pollutant-card .pbar span{display:block;height:100%;border-radius:4px;}
+
+.health-tip{margin:16px 22px 0;padding:16px;display:flex;gap:12px;align-items:flex-start;}
+.health-tip i{color:var(--success);font-size:20px;margin-top:2px;}
+.health-tip .tt{font-family:var(--font-display);font-weight:600;font-size:13px;}
+.health-tip .ts{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;}
+
+/* ======================================================
+   ALERTS
+====================================================== */
+.alert-card{margin:0 22px 14px;padding:16px;border-left:4px solid var(--warning);display:flex;gap:12px;}
+.alert-card.danger{border-left-color:var(--danger);}
+.alert-card.info{border-left-color:var(--primary);}
+.alert-card i{font-size:22px;margin-top:2px;}
+.alert-card.danger i{color:var(--danger);}
+.alert-card.info i{color:var(--primary);}
+.alert-card i{color:var(--warning);}
+.alert-card .at{font-family:var(--font-display);font-weight:600;font-size:14px;}
+.alert-card .aw{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--warning);margin-top:2px;display:block;}
+.alert-card.danger .aw{color:var(--danger);}
+.alert-card.info .aw{color:var(--primary);}
+.alert-card .as{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;}
+.alert-empty{margin:40px 22px;text-align:center;color:var(--faint);font-size:13px;}
+.alert-empty i{font-size:34px;color:var(--success);margin-bottom:10px;display:block;}
+
+/* ======================================================
+   SETTINGS
+====================================================== */
+.settings-group{margin:0 22px 18px;overflow:hidden;}
+.settings-row{display:flex;align-items:center;gap:14px;padding:15px 16px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.settings-row:last-child{border-bottom:none;}
+.settings-row i{font-size:18px;color:var(--accent);width:22px;}
+.settings-row .st{flex:1;font-size:14px;font-weight:500;}
+.settings-row .sv{font-size:12px;color:var(--faint);}
+.settings-row .chev{color:var(--faint);font-size:16px;}
+.group-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);margin:18px 26px 8px;}
+
+.switch{width:42px;height:24px;border-radius:999px;background:rgba(255,255,255,0.14);position:relative;flex-shrink:0;transition:.2s;}
+.switch.on{background:linear-gradient(120deg,var(--accent),var(--primary));}
+.switch .knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;}
+.switch.on .knob{left:21px;}
+
+/* ======================================================
+   ABOUT
+====================================================== */
+.about-hero{text-align:center;padding:10px 22px 6px;}
+.about-logo{width:72px;height:72px;border-radius:22px;margin:0 auto 14px;background:linear-gradient(135deg,var(--accent),var(--secondary));display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 14px 26px rgba(0,212,255,0.3);}
+.about-name{font-family:var(--font-display);font-weight:700;font-size:20px;}
+.about-version{font-size:12px;color:var(--faint);margin-top:2px;}
+.feature-list{display:flex;flex-direction:column;gap:10px;padding:16px 22px 0;}
+.feature-row{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;}
+.feature-row i{color:var(--accent);font-size:18px;margin-top:1px;}
+.feature-row .ft{font-size:13px;font-weight:600;font-family:var(--font-display);}
+.feature-row .fs{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.5;}
+.about-links{display:flex;flex-direction:column;padding:6px 22px 0;}
+.about-link-row{display:flex;justify-content:space-between;align-items:center;padding:14px 4px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;color:var(--muted);}
+.about-link-row .chev{color:var(--faint);}
+.about-footer{text-align:center;color:var(--faint);font-size:11px;padding:20px 22px 4px;}
+
+/* toast */
+.toast{
+  position:absolute;bottom:110px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(18,24,44,0.95);border:1px solid var(--border);
+  padding:10px 18px;border-radius:999px;font-size:12px;font-weight:600;
+  opacity:0;pointer-events:none;transition:.3s;z-index:80;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="studio-frame">
+  <div class="studio-label"><span class="dot"></span> SkyCast · Interactive Prototype · 390×844</div>
+
+  <div class="device">
+    <div class="screen-viewport" id="viewport">
+      <div class="notch"><span class="cam"></span></div>
+
+      <!-- ============ 1. SPLASH ============ -->
+      <section class="screen active" id="screen-splash">
+        <div class="orb"></div>
+        <div class="splash-mark">
+          <svg width="108" height="108" viewBox="0 0 108 108" class="glyph">
+            <circle class="sun-core" cx="54" cy="46" r="22" fill="url(#gSun)"/>
+            <path class="cloud" d="M28 74c-9 0-16-7-16-15s7-15 15-15c2-11 12-19 24-19 13 0 24 10 25 23 8 1 14 8 14 16 0 9-7 16-16 16H28z" fill="url(#gCloud)"/>
+            <defs>
+              <linearGradient id="gSun" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#00D4FF"/><stop offset="100%" stop-color="#4F8EF7"/>
+              </linearGradient>
+              <linearGradient id="gCloud" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#EAF1FF"/><stop offset="100%" stop-color="#B8C4E0"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="splash-wordmark">SkyCast</h1>
+        <p class="splash-tagline">Calm, accurate weather — for the moments before you walk out the door.</p>
+        <div class="splash-cta">
+          <button class="btn btn-primary" onclick="go('home')">Get Started <i class='bx bx-right-arrow-alt'></i></button>
+        </div>
+      </section>
+
+      <!-- ============ 2. HOME ============ -->
+      <section class="screen" id="screen-home">
+        <div class="status-row"><span>9:41</span><span><i class='bx bx-signal-5'></i> <i class='bx bx-wifi'></i> <i class='bx bx-battery-full'></i></span></div>
+        <div class="home-top">
+          <div>
+            <div class="location" onclick="go('search')"><i class='bx bxs-map'></i> Patna, India</div>
+            <div class="home-datetime">Saturday, 18 July · Updated 2 min ago</div>
+          </div>
+          <button class="avatar-btn" onclick="go('search')"><i class='bx bx-search'></i></button>
+        </div>
+
+        <div class="scroll-area">
+          <div class="hero-weather" onclick="go('details')">
+            <svg width="150" height="110" viewBox="0 0 150 110" class="glyph detail-illustration">
+              <circle class="sun-core" cx="58" cy="46" r="26" fill="url(#gSun2)"/>
+              <path class="cloud" d="M40 92c-11 0-20-9-20-19s9-19 19-19c3-13 15-23 29-23 16 0 29 12 30 28 10 1 17 10 17 19 0 11-9 20-20 20H40z" fill="url(#gCloud2)"/>
+              <defs>
+                <linearGradient id="gSun2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FBBF24"/><stop offset="100%" stop-color="#00D4FF"/></linearGradient>
+                <linearGradient id="gCloud2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F4F8FF"/><stop offset="100%" stop-color="#9FB0DE"/></linearGradient>
+              </defs>
+            </svg>
+            <div class="hero-temp">28°</div>
+            <div class="hero-condition">Partly Cloudy</div>
+            <div class="hero-feels">Feels like 31° · H:31° L:24°</div>
+          </div>
+
+          <div class="quick-grid">
+            <div class="glass-card quick-tile"><i class='bx bx-water'></i><div class="val">64%</div><div class="lbl">Humidity</div></div>
+            <div class="glass-card quick-tile"><i class='bx bx-wind'></i><div class="val">14 km/h</div><div class="lbl">Wind</div></div>
+            <div class="glass-card quick-tile"><i class='bx bxs-sun'></i><div class="val">6 UV</div><div class="lbl">High</div></div>
+          </div>
+
+          <div class="glass-card aqi-banner" onclick="go('airquality')">
+            <div class="aqi-ring"><span>72</span></div>
+            <div class="aqi-copy">
+              <div class="t">Air quality is good</div>
+              <div class="s">Great day for outdoor plans</div>
+            </div>
+            <i class='bx bx-chevron-right' style="color:var(--faint)"></i>
+          </div>
+
+          <div class="section-title">Hourly forecast <span class="link" onclick="event.stopPropagation();go('forecast')">See all</span></div>
+          <div class="glass-card" style="padding:6px 0;">
+            <div class="hourly-strip" id="homeHourly"></div>
+          </div>
+
+          <div class="section-title">Sun path</div>
+          <div class="glass-card sun-track">
+            <div class="labels"><span><i class='bx bxs-sun-dim'></i> 5:52 AM</span><span>7:41 PM <i class='bx bxs-moon'></i></span></div>
+            <div class="track"><div class="sun-dot" style="left:62%;"></div></div>
+          </div>
+
+          <div class="section-title">This week <span class="link" onclick="event.stopPropagation();go('forecast')">7‑day</span></div>
+          <div class="glass-card" style="padding:14px 16px;display:flex;justify-content:space-between;" id="homeWeekStrip"></div>
+        </div>
+
+        <nav class="bottom-nav" id="nav-home"></nav>
+      </section>
+
+      <!-- ============ 3. SEARCH ============ -->
+      <section class="screen" id="screen-search">
+        <div class="status-row"><span>9:41</span><span></span></div>
+        <div class="top-header">
+          <button class="icon-btn" onclick="go('home')"><i class='bx bx-arrow-back'></i></button>
+          <h2>Search city</h2>
+        </div>
+        <div class="scroll-area no-nav">
+          <div class="glass-card search-bar">
+            <i class='bx bx-search'></i>
+            <input type="text" placeholder="Try 'Tokyo' or 'Cape Town'">
+            <i class='bx bx-microphone mic-btn'></i>
+          </div>
+
+          <div class="section-title">Recent searches</div>
+          <div class="chip-row">
+            <div class="chip"><i class='bx bx-history'></i> Mumbai</div>
+            <div class="chip"><i class='bx bx-history'></i> London</div>
+            <div class="chip"><i class='bx bx-history'></i> Dubai</div>
+          </div>
+
+          <div class="section-title">Popular cities</div>
+          <div class="glass-card" style="padding:4px 16px;">
+            <div class="city-row" onclick="go('details')"><div class="ci"><i class='bx bxs-sun'></i></div><div class="cn"><div class="name">New York</div><div class="country">United States</div></div><div class="ct">23°</div></div>
+            <div class="city-row" onclick="go('details')"><div class="ci"><i class='bx bx-cloud-rain'></i></div><div class="cn"><div class="name">Tokyo</div><div class="country">Japan</div></div><div class="ct">26°</div></div>
+            <div class="city-row" onclick="go('details')"><div class="ci"><i class='bx bx-cloud'></i></div><div class="cn"><div class="name">Paris</div><div class="country">France</div></div><div class="ct">19°</div></div>
+            <div class="city-row" style="border-bottom:none;" onclick="go('details')"><div class="ci"><i class='bx bxs-sun'></i></div><div class="cn"><div class="name">Sydney</div><div class="country">Australia</div></div><div class="ct">17°</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 4. WEATHER DETAILS ============ -->
+      <section class="screen" id="screen-details">
+        <div class="status-row"><span>9:41</span><span></span></div>
+        <div class="top-header">
+          <button class="icon-btn" onclick="go('home')"><i class='bx bx-arrow-back'></i></button>
+          <h2>Patna</h2>
+          <div class="spacer"></div>
+          <button class="icon-btn" onclick="toast('Link copied')"><i class='bx bx-share-alt'></i></button>
+        </div>
+        <div class="scroll-area no-nav">
+          <div class="detail-hero">
+            <svg width="130" height="96" viewBox="0 0 150 110" class="glyph detail-illustration">
+              <circle class="sun-core" cx="58" cy="46" r="26" fill="url(#gSun3)"/>
+              <path class="cloud" d="M40 92c-11 0-20-9-20-19s9-19 19-19c3-13 15-23 29-23 16 0 29 12 30 28 10 1 17 10 17 19 0 11-9 20-20 20H40z" fill="url(#gCloud3)"/>
+              <defs>
+                <linearGradient id="gSun3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FBBF24"/><stop offset="100%" stop-color="#00D4FF"/></linearGradient>
+                <linearGradient id="gCloud3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F4F8FF"/><stop offset="100%" stop-color="#9FB0DE"/></linearGradient>
+              </defs>
+            </svg>
+            <div class="detail-temp">28°C</div>
+            <div class="detail-desc">Partly cloudy · Feels like 31°</div>
+          </div>
+
+          <div class="stat-grid">
+            <div class="glass-card stat-card"><i class='bx bx-water'></i><div class="v">64%</div><div class="l">Humidity</div></div>
+            <div class="glass-card stat-card"><i class='bx bx-wind'></i><div class="v">14 km/h</div><div class="l">Wind speed</div></div>
+            <div class="glass-card stat-card"><i class='bx bxs-thermometer'></i><div class="v">1008 hPa</div><div class="l">Pressure</div></div>
+            <div class="glass-card stat-card"><i class='bx bx-show'></i><div class="v">9 km</div><div class="l">Visibility</div></div>
+            <div class="glass-card stat-card"><i class='bx bxs-sun'></i><div class="v">6 · High</div><div class="l">UV Index</div></div>
+            <div class="glass-card stat-card"><i class='bx bxs-moon'></i><div class="v">7:41 PM</div><div class="l">Sunset</div></div>
+          </div>
+
+          <div class="glass-card rain-bar-wrap">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);"><span>Rain probability</span><span style="color:var(--text);font-weight:600;">40%</span></div>
+            <div class="rain-bar"><div class="rain-bar-fill" style="width:40%;"></div></div>
+          </div>
+
+          <div class="section-title">Explore <span class="link" onclick="go('forecast')">Hourly & 7‑day</span></div>
+        </div>
+      </section>
+
+      <!-- ============ 5 & 6. FORECAST (hourly + 7-day segmented) ============ -->
+      <section class="screen" id="screen-forecast">
+        <div class="status-row"><span>9:41</span><span></span></div>
+        <div class="top-header"><h2>Forecast</h2></div>
+        <div class="segmented">
+          <button class="active" id="segHourly" onclick="setForecastView('hourly')">Hourly</button>
+          <button id="segDaily" onclick="setForecastView('daily')">7‑Day</button>
+        </div>
+
+        <div class="scroll-area" id="forecastHourlyView">
+          <div class="glass-card graph-card">
+            <div class="g-head"><span class="now">Today, 28°</span><span class="range">6 AM – 11 PM</span></div>
+            <svg id="tempGraph" width="100%" height="90" viewBox="0 0 320 90" preserveAspectRatio="none"></svg>
+          </div>
+          <div class="glass-card" style="margin:14px 22px 0;padding:0 16px;">
+            <div class="hourly-list" id="hourlyList"></div>
+          </div>
+        </div>
+
+        <div class="scroll-area" id="forecastDailyView" style="display:none;">
+          <div id="weekList" style="margin-top:8px;"></div>
+        </div>
+
+        <nav class="bottom-nav" id="nav-forecast"></nav>
+      </section>
+
+      <!-- ============ 7. AIR QUALITY ============ -->
+      <section class="screen" id="screen-airquality">
+        <div class="status-row"><span>9:41</span><span></span></div>
+        <div class="top-header">
+          <button class="icon-btn" onclick="go('home')"><i class='bx bx-arrow-back'></i></button>
+          <h2>Air Quality</h2>
+        </div>
+        <div class="scroll-area no-nav">
+          <div class="gauge-wrap">
+            <svg width="220" height="130" viewBox="0 0 220 130">
+              <path d="M20 110 A90 90 0 0 1 200 110" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="16" stroke-linecap="round"/>
+              <path d="M20 110 A90 90 0 0 1 200 110" fill="none" stroke="url(#gAqi)" stroke-width="16" stroke-linecap="round" stroke-dasharray="204 283" />
+              <defs><linearGradient id="gAqi" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#34D399"/><stop offset="100%" stop-color="#00D4FF"/></linearGradient></defs>
+            </svg>
+            <div class="gauge-value"><div class="num">72</div><div class="lab">Good</div></div>
+          </div>
+
+          <div class="pollutant-grid">
+            <div class="glass-card pollutant-card"><div class="pn">PM2.5</div><div class="pv">18 µg/m³</div><div class="pbar"><span style="width:36%;background:var(--success);"></span></div></div>
+            <div class="glass-card pollutant-card"><div class="pn">PM10</div><div class="pv">32 µg/m³</div><div class="pbar"><span style="width:48%;background:var(--success);"></span></div></div>
+            <div class="glass-card pollutant-card"><div class="pn">Humidity</div><div class="pv">64%</div><div class="pbar"><span style="width:64%;background:var(--primary);"></span></div></div>
+            <div class="glass-card pollutant-card"><div class="pn">Pollen</div><div class="pv">Moderate</div><div class="pbar"><span style="width:55%;background:var(--warning);"></span></div></div>
+          </div>
+
+          <div class="glass-card health-tip">
+            <i class='bx bx-check-shield'></i>
+            <div><div class="tt">Safe for outdoor activity</div><div class="ts">Air quality is within a healthy range. Sensitive groups can enjoy the outdoors with no special precautions today.</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 8. ALERTS ============ -->
+      <section class="screen" id="screen-alerts">
+        <div class="status-row"><span>9:41</span><span></span></div>
+        <div class="top-header"><h2>Weather Alerts</h2></div>
+        <div class="scroll-area">
+          <div class="glass-card alert-card">
+            <i class='bx bx-cloud-lightning'></i>
+            <div><span class="aw">Thunderstorm Watch</span><div class="at">Evening storms expected</div><div class="as">Scattered thunderstorms likely between 6 PM and 9 PM. Secure loose outdoor items and avoid open fields.</div></div>
+          </div>
+          <div class="glass-card alert-card danger">
+            <i class='bx bx-water'></i>
+            <div><span class="aw">Heavy Rain</span><div class="at">Flood watch — low‑lying areas</div><div class="as">40–60mm of rainfall expected overnight. Avoid driving through waterlogged roads.</div></div>
+          </div>
+          <div class="glass-card alert-card info">
+            <i class='bx bxs-sun'></i>
+            <div><span class="aw">Heat Advisory</span><div class="at">High UV this afternoon</div><div class="as">UV index reaches 8 between 12–3 PM. Wear sunscreen and limit prolonged sun exposure.</div></div>
+          </div>
+        </div>
+        <nav class="bottom-nav" id="nav-alerts"></nav>
+      </section>
+
+      <!-- ============ 9. SETTINGS ============ -->
+      <section class="screen" id="screen-settings">
+        <div class="status-row"><span>9:41</span><span></span></div>
+        <div class="top-header"><h2>Settings</h2></div>
+        <div class="scroll-area">
+          <div class="group-label">Appearance</div>
+          <div class="glass-card settings-group">
+            <div class="settings-row"><i class='bx bx-moon'></i><div class="st">Dark Mode</div><div class="switch on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div>
+            <div class="settings-row"><i class='bx bxs-thermometer'></i><div class="st">Temperature Unit</div><div class="sv">Celsius</div><i class='bx bx-chevron-right chev'></i></div>
+            <div class="settings-row"><i class='bx bx-globe'></i><div class="st">Language</div><div class="sv">English</div><i class='bx bx-chevron-right chev'></i></div>
+          </div>
+
+          <div class="group-label">Preferences</div>
+          <div class="glass-card settings-group">
+            <div class="settings-row"><i class='bx bx-bell'></i><div class="st">Notifications</div><div class="switch on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div>
+            <div class="settings-row"><i class='bx bx-current-location'></i><div class="st">Location Permission</div><div class="switch on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div>
+          </div>
+
+          <div class="group-label">General</div>
+          <div class="glass-card settings-group">
+            <div class="settings-row"><i class='bx bx-lock-alt'></i><div class="st">Privacy</div><i class='bx bx-chevron-right chev'></i></div>
+            <div class="settings-row" onclick="go('about')" style="cursor:pointer;"><i class='bx bx-info-circle'></i><div class="st">About SkyCast</div><i class='bx bx-chevron-right chev'></i></div>
+          </div>
+        </div>
+        <nav class="bottom-nav" id="nav-settings"></nav>
+      </section>
+
+      <!-- ============ 10. ABOUT ============ -->
+      <section class="screen" id="screen-about">
+        <div class="status-row"><span>9:41</span><span></span></div>
+        <div class="top-header">
+          <button class="icon-btn" onclick="go('settings')"><i class='bx bx-arrow-back'></i></button>
+          <h2>About</h2>
+        </div>
+        <div class="scroll-area no-nav">
+          <div class="about-hero">
+            <div class="about-logo"><i class='bx bxs-cloud'></i></div>
+            <div class="about-name">SkyCast</div>
+            <div class="about-version">Version 2.4.0</div>
+          </div>
+
+          <div class="feature-list">
+            <div class="glass-card feature-row"><i class='bx bx-search'></i><div><div class="ft">Search any city</div><div class="fs">Instant conditions for any location worldwide.</div></div></div>
+            <div class="glass-card feature-row"><i class='bx bx-line-chart'></i><div><div class="ft">Hourly & 7‑day outlook</div><div class="fs">Plan ahead with a clear, scrollable timeline.</div></div></div>
+            <div class="glass-card feature-row"><i class='bx bx-leaf'></i><div><div class="ft">Air quality tracking</div><div class="fs">Live AQI, pollen and health guidance.</div></div></div>
+            <div class="glass-card feature-row"><i class='bx bx-bell'></i><div><div class="ft">Severe weather alerts</div><div class="fs">Timely warnings before conditions turn.</div></div></div>
+          </div>
+
+          <div class="glass-card about-links" style="padding:2px 16px;margin-top:18px;">
+            <div class="about-link-row">Contact support <i class='bx bx-chevron-right chev'></i></div>
+            <div class="about-link-row">Privacy Policy <i class='bx bx-chevron-right chev'></i></div>
+            <div class="about-link-row">Terms of Service <i class='bx bx-chevron-right chev'></i></div>
+            <div class="about-link-row" style="border-bottom:none;">Rate SkyCast <i class='bx bx-chevron-right chev'></i></div>
+          </div>
+          <div class="about-footer">Made with care for clearer skies ahead.</div>
+        </div>
+      </section>
+
+      <div class="toast" id="toast"></div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- data ---------- */
+const hours = [
+  {t:"Now",i:"bx-cloud",v:28,r:10},{t:"1PM",i:"bxs-sun",v:30,r:0},{t:"2PM",i:"bxs-sun",v:31,r:0},
+  {t:"3PM",i:"bx-cloud",v:29,r:20},{t:"4PM",i:"bx-cloud-rain",v:27,r:40},{t:"5PM",i:"bx-cloud-rain",v:26,r:55},
+  {t:"6PM",i:"bx-cloud-lightning",v:25,r:60},{t:"7PM",i:"bx-cloud",v:24,r:30},{t:"8PM",i:"bxs-moon",v:23,r:10},
+  {t:"9PM",i:"bxs-moon",v:22,r:5},{t:"10PM",i:"bxs-moon",v:22,r:0},{t:"11PM",i:"bxs-moon",v:21,r:0}
+];
+const week = [
+  {d:"Today",date:"18 Jul",i:"bx-cloud",desc:"Partly cloudy",hi:31,lo:24},
+  {d:"Sun",date:"19 Jul",i:"bx-cloud-rain",desc:"Light showers",hi:29,lo:23},
+  {d:"Mon",date:"20 Jul",i:"bx-cloud-lightning",desc:"Thunderstorms",hi:27,lo:22},
+  {d:"Tue",date:"21 Jul",i:"bxs-sun",desc:"Sunny",hi:32,lo:25},
+  {d:"Wed",date:"22 Jul",i:"bxs-sun",desc:"Clear skies",hi:33,lo:25},
+  {d:"Thu",date:"23 Jul",i:"bx-cloud",desc:"Overcast",hi:30,lo:24},
+  {d:"Fri",date:"24 Jul",i:"bx-cloud-rain",desc:"Rain likely",hi:28,lo:23},
+];
+const navItems = [
+  {id:"home",icon:"bx-home-alt-2",label:"Home"},
+  {id:"forecast",icon:"bx-calendar",label:"Forecast"},
+  {id:"alerts",icon:"bx-bell",label:"Alerts"},
+  {id:"settings",icon:"bx-cog",label:"Settings"},
+];
+
+/* ---------- render helpers ---------- */
+function renderNav(activeId){
+  return navItems.map(n=>`
+    <button class="nav-item ${n.id===activeId?'active':''}" onclick="go('${n.id}')">
+      <i class='bx ${n.icon}'></i>${n.label}<span class="nub"></span>
+    </button>`).join('');
+}
+['home','forecast','alerts','settings'].forEach(id=>{
+  document.getElementById('nav-'+id).innerHTML = renderNav(id);
+});
+
+document.getElementById('homeHourly').innerHTML = hours.slice(0,8).map(h=>`
+  <div class="hour-chip"><div class="h-time">${h.t}</div><i class='bx ${h.i}'></i><div class="h-temp">${h.v}°</div></div>
+`).join('');
+
+document.getElementById('homeWeekStrip').innerHTML = week.slice(0,5).map(d=>`
+  <div style="text-align:center;">
+    <div style="font-size:10px;color:var(--faint);margin-bottom:6px;">${d.d}</div>
+    <i class='bx ${d.i}' style="color:var(--accent);font-size:16px;"></i>
+    <div style="font-size:11px;font-weight:600;margin-top:6px;font-family:var(--font-display);">${d.hi}°</div>
+  </div>
+`).join('');
+
+document.getElementById('hourlyList').innerHTML = hours.map(h=>`
+  <div class="hourly-row"><div class="time">${h.t}</div><i class='bx ${h.i}'></i><div class="rp">${h.r>0? h.r+'% rain':'—'}</div><div class="ht">${h.v}°</div></div>
+`).join('');
+
+document.getElementById('weekList').innerHTML = week.map(d=>`
+  <div class="glass-card day-card" onclick="toast('${d.d} details')">
+    <div class="dn"><div class="name">${d.d}</div><div class="date">${d.date}</div></div>
+    <i class='bx ${d.i}'></i>
+    <div class="dd">${d.desc}</div>
+    <div class="range"><span>${d.hi}°</span><span class="lo">${d.lo}°</span></div>
+  </div>
+`).join('');
+
+/* temp graph */
+(function(){
+  const svg = document.getElementById('tempGraph');
+  const vals = hours.map(h=>h.v);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const w = 320, h = 90, pad = 8;
+  const pts = vals.map((v,i)=>{
+    const x = (i/(vals.length-1))*w;
+    const y = h - pad - ((v-min)/(max-min||1))*(h-pad*2);
+    return [x,y];
+  });
+  const line = pts.map(p=>p.join(',')).join(' ');
+  const area = `0,${h} ${line} ${w},${h}`;
+  svg.innerHTML = `
+    <defs><linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00D4FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00D4FF" stop-opacity="0"/>
+    </linearGradient></defs>
+    <polygon points="${area}" fill="url(#areaFill)"/>
+    <polyline points="${line}" fill="none" stroke="#00D4FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="#ffffff"/>`).join('')}
+  `;
+})();
+
+/* ---------- navigation ---------- */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+function setForecastView(view){
+  document.getElementById('segHourly').classList.toggle('active', view==='hourly');
+  document.getElementById('segDaily').classList.toggle('active', view==='daily');
+  document.getElementById('forecastHourlyView').style.display = view==='hourly' ? 'block':'none';
+  document.getElementById('forecastDailyView').style.display = view==='daily' ? 'block':'none';
+}
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'),1600);
+}
+</script>
+</body>
+</html>
